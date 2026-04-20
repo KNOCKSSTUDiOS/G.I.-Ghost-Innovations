@@ -17,4 +17,3 @@ export function attachAi(app: express.Express) {
     res.json(await aiGenerateTimeline(user_id, project_id, prompt));
   });
 }
-
