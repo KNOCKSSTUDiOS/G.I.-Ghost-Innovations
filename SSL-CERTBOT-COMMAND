@@ -1,0 +1,2 @@
+sudo certbot --nginx -d hollywoodimaging.studio -d www.hollywoodimaging.studio
+
