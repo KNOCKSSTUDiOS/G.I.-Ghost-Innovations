@@ -1,5 +1,16 @@
-import express, { Request, Response } from "express";
+import http import { attachRealtime } const server.listen(3000, ()   import express, { Request, Response } from "express";
 import bodyParser from "body-parser";
+import http from "http";
+import { attachRealtime } from "./server-realtime-attach";
+
+const app = express();
+const server = http.createServer(app);
+
+attachRealtime(server);
+
+server.listen(3000, () => {
+  console.log("G.I. Platform running with realtime logs");
+});
 
 // ---------- Types ----------
 
