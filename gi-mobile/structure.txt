@@ -1,0 +1,16 @@
+gi-mobile/
+│
+├── App.js
+├── api/
+│   └── client.js
+├── screens/
+│   ├── LoginScreen.js
+│   ├── ProjectListScreen.js
+│   ├── SceneListScreen.js
+│   ├── ScriptEditorScreen.js
+│   ├── TimelineScreen.js
+│   └── AssetScreen.js
+├── components/
+│   └── Header.js
+└── package.json
+
