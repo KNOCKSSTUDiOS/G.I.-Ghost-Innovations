@@ -1,8 +1,7 @@
-export const getStatus = () => {
-  return {
-    ok: true,
-    service: "G.I. Backend Controller Layer",
-    timestamp: Date.now()
-  };
-};
+import { statusService } from "../services/statusService.js";
+import { send } from "../lib/response.js";
 
+export const statusController = (req, res) => {
+  const data = statusService();
+  send(res, data, 200);
+};
