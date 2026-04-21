@@ -1,75 +1,43 @@
 import http from "http";
-import url from "url";
-import { createGIRouterEngine, GIRouteContext, GIMethod } from "./gi-engine/router-engine";
+import { createCore } from "./gi-core/core";
+import { createRouter } from "./gi-router/router";
 
-const router = createGIRouterEngine();
+import { registerAdminExtension } from "./gi-extensions-admin/admin-extension";
+import { registerAuthExtension } from "./gi-extensions-auth/auth-extension";
+import { registerUserExtension } from "./gi-extensions-user/user-extension";
+import { registerSystemExtension } from "./gi-extensions-system/system-extension";
+import { registerCreatorExtension } from "./gi-extensions-creator/creator-extension";
 
-// basic health route
-router.get("/api/health", async () => {
-  return { status: "ok", service: "gi-backend", ts: Date.now() };
+const core = createCore();
+const router = createRouter(core);
+
+registerAdminExtension(router, core);
+registerAuthExtension(router, core);
+registerUserExtension(router, core);
+registerSystemExtension(router, core);
+registerCreatorExtension(router, core);
+
+router.register("GET", "/", async (req, res) => {
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("Server running");
 });
 
-function parseQuery(query: string | null): Record<string, string | string[]> {
-  if (!query) return {};
-  const params = new url.URLSearchParams(query);
-  const out: Record<string, string | string[]> = {};
-  for (const [key, value] of params.entries()) {
-    if (out[key]) {
-      const existing = out[key];
-      out[key] = Array.isArray(existing) ? [...existing, value] : [existing, value];
-    } else {
-      out[key] = value;
-    }
-  }
-  return out;
-}
+router.register("GET", "/health", async (req, res) => {
+  res.writeHead(200, { "Content-Type": "application/json" });
+  res.end(JSON.stringify({ status: "ok" }));
+});
 
 const server = http.createServer(async (req, res) => {
-  const parsed = url.parse(req.url || "", true);
-  const method = (req.method || "GET").toUpperCase() as GIMethod;
-  const path = parsed.pathname || "/";
-  const query = parseQuery(parsed.search || null);
-
-  let body: any = undefined;
-  if (method !== "GET" && method !== "OPTIONS") {
-    const chunks: Buffer[] = [];
-    for await (const chunk of req) {
-      chunks.push(chunk as Buffer);
-    }
-    const raw = Buffer.concat(chunks).toString("utf8");
-    try {
-      body = raw ? JSON.parse(raw) : undefined;
-    } catch {
-      body = raw;
-    }
-  }
-
-  const ctx: GIRouteContext = {
-    path,
-    method,
-    params: {},
-    query,
-    headers: (req.headers as Record<string, string>) || {},
-    body,
-    raw: req
-  };
-
-  res.setHeader("Content-Type", "application/json");
-
   try {
-    const result = await router.dispatch(ctx);
-    res.statusCode = 200;
-    res.end(JSON.stringify(result));
-  } catch (err: any) {
-    const status = err?.status || 500;
-    res.statusCode = status;
-    res.end(JSON.stringify({ error: err?.message || "Internal Server Error" }));
+    await router.handle(req, res);
+  } catch (err) {
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "internal_error" }));
   }
 });
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
+const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
-  console.log(`G.I. backend listening on http://localhost:${PORT}`);
+  console.log("Server listening on port " + PORT);
 });
-
