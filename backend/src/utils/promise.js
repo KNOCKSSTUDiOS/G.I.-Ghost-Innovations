@@ -7,6 +7,7 @@ export function timeout(promise, ms = 5000) {
   const timeoutPromise = new Promise((_, reject) => {
     timer = setTimeout(() => reject(new Error("Operation timed out")), ms);
   });
+
   return Promise.race([
     promise.finally(() => clearTimeout(timer)),
     timeoutPromise
