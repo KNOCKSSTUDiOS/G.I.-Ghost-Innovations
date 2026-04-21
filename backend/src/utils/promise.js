@@ -1,19 +1,26 @@
-export async function attempt(fn, ...args) {
-  try {
-    const result = await fn(...args);
-    return [null, result];
-  } catch (err) {
-    return [err, null];
-  }
+export function delay(ms = 1000) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export function wrap(fn) {
-  return async function (req, res, next) {
-    try {
-      await fn(req, res, next);
-    } catch (err) {
-      next(err);
-    }
-  };
-}
+export async function waitFor(fn, interval = 200, timeout = 5000) {
+  const start = Date.now();
 
+  return new Promise((resolve, reject) => {
+    const check = async () => {
+      try {
+        const result = await fn();
+        if (result) return resolve(result);
+
+        if (Date.now() - start >= timeout) {
+          return reject(new Error("waitFor: timeout exceeded"));
+        }
+
+        setTimeout(check, interval);
+      } catch (err) {
+        reject(err);
+      }
+    };
+
+    check();
+  });
+}
