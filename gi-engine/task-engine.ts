@@ -1,123 +1,111 @@
 import crypto from "crypto";
 
-export interface GITask {
-  id: string;
-  type: string;
-  payload: any;
-  createdAt: number;
-  updatedAt: number;
-  attempts: number;
-  maxAttempts: number;
-  status: "pending" | "running" | "failed" | "completed";
-  error?: string | null;
-}
+export type GITaskStatus = "pending" | "running" | "completed" | "failed" | "cancelled";
 
 export interface GITaskConfig {
-  maxAttempts?: number;
-  concurrency?: number;
-  interval?: number;
+  id?: string;
+  priority?: number;
+  retries?: number;
+  delay?: number;
+}
+
+export interface GITask<T = any> {
+  id: string;
+  run: () => Promise<T>;
+  status: GITaskStatus;
+  priority: number;
+  retries: number;
+  attempts: number;
+  createdAt: number;
+  updatedAt: number;
+  delay: number;
 }
 
 export class GI_TaskEngine {
-  queue: Map<string, GITask>;
-  workers: number;
-  maxAttempts: number;
-  interval: number;
-  running: boolean;
+  private queue: GITask[];
+  private running: boolean;
 
-  constructor(config: GITaskConfig = {}) {
-    this.queue = new Map();
-    this.workers = config.concurrency || 3;
-    this.maxAttempts = config.maxAttempts || 3;
-    this.interval = config.interval || 250;
+  constructor() {
+    this.queue = [];
     this.running = false;
   }
 
-  create(type: string, payload: any) {
-    const now = Date.now();
-    const task: GITask = {
-      id: crypto.randomUUID(),
-      type,
-      payload,
-      createdAt: now,
-      updatedAt: now,
-      attempts: 0,
-      maxAttempts: this.maxAttempts,
+  add<T>(run: () => Promise<T>, config: GITaskConfig = {}): GITask<T> {
+    const task: GITask<T> = {
+      id: config.id || crypto.randomUUID(),
+      run,
       status: "pending",
-      error: null
+      priority: config.priority ?? 0,
+      retries: config.retries ?? 0,
+      attempts: 0,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      delay: config.delay ?? 0
     };
 
-    this.queue.set(task.id, task);
+    this.queue.push(task);
+    this.sortQueue();
+    this.process();
+
     return task;
   }
 
-  get(id: string) {
-    return this.queue.get(id) || null;
+  private sortQueue() {
+    this.queue.sort((a, b) => b.priority - a.priority);
   }
 
-  list(status?: GITask["status"]) {
-    const all = [...this.queue.values()];
-    if (!status) return all;
-    return all.filter(t => t.status === status);
-  }
-
-  async runTask(task: GITask, handler: Function) {
-    task.status = "running";
-    task.attempts++;
-    task.updatedAt = Date.now();
-
-    try {
-      await handler(task.payload);
-      task.status = "completed";
-      task.updatedAt = Date.now();
-    } catch (err: any) {
-      task.error = err?.message || "Unknown error";
-      task.updatedAt = Date.now();
-
-      if (task.attempts >= task.maxAttempts) {
-        task.status = "failed";
-      } else {
-        task.status = "pending";
-      }
-    }
-  }
-
-  async start(handlerMap: Record<string, Function>) {
+  private async process() {
     if (this.running) return;
     this.running = true;
 
-    const loop = async () => {
-      if (!this.running) return;
+    while (true) {
+      const next = this.queue.find(t => t.status === "pending");
+      if (!next) break;
 
-      const pending = this.list("pending").slice(0, this.workers);
-
-      for (const task of pending) {
-        const handler = handlerMap[task.type];
-        if (!handler) {
-          task.status = "failed";
-          task.error = `No handler for task type: ${task.type}`;
-          continue;
-        }
-
-        await this.runTask(task, handler);
+      if (next.delay > 0) {
+        await new Promise(res => setTimeout(res, next.delay));
+        next.delay = 0;
       }
 
-      setTimeout(loop, this.interval);
-    };
+      next.status = "running";
+      next.updatedAt = Date.now();
 
-    loop();
-  }
+      try {
+        next.attempts++;
+        await next.run();
+        next.status = "completed";
+      } catch (err) {
+        if (next.attempts <= next.retries) {
+          next.status = "pending";
+        } else {
+          next.status = "failed";
+        }
+      }
 
-  stop() {
+      next.updatedAt = Date.now();
+    }
+
     this.running = false;
   }
 
+  cancel(id: string) {
+    const task = this.queue.find(t => t.id === id);
+    if (task && task.status === "pending") {
+      task.status = "cancelled";
+      task.updatedAt = Date.now();
+    }
+  }
+
+  list(status?: GITaskStatus) {
+    if (!status) return [...this.queue];
+    return this.queue.filter(t => t.status === status);
+  }
+
   clear() {
-    this.queue.clear();
+    this.queue = [];
   }
 }
 
-export function createGITaskEngine(config: GITaskConfig = {}) {
-  return new GI_TaskEngine(config);
+export function createGITaskEngine() {
+  return new GI_TaskEngine();
 }
-
