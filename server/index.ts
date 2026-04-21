@@ -1,26 +1,37 @@
 import http from "http";
 import { bootstrapGI } from "./bootstrap/gi-bootstrap";
+import { createGIRouter } from "./router/gi-router";
 
+const engine = bootstrapGI();
+const router = createGIRouter();
+
+// --------------------------------------
+// REGISTER ROUTES
+// --------------------------------------
+router.register("GET", "/health", async (req, res, engine) => {
+  res.writeHead(200, { "Content-Type": "application/json" });
+  res.end(JSON.stringify({ status: "ok", engine: "GI" }));
+});
+
+router.register("GET", "/", async (req, res, engine) => {
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("GI Engine Server Running with Router");
+});
+
+// --------------------------------------
+// CREATE SERVER
+// --------------------------------------
 function createServer() {
-  const engine = bootstrapGI();
-
   const server = http.createServer(async (req, res) => {
     try {
-      engine.logger.info("Incoming request", { url: req.url, method: req.method });
-
-      // Basic health route
-      if (req.url === "/health") {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ status: "ok", engine: "GI" }));
-        return;
-      }
-
-      // Default response
-      res.writeHead(200, { "Content-Type": "text/plain" });
-      res.end("GI Engine Server Running");
+      await router.handle(req, res);
     } catch (err: any) {
+      engine.error.create("server_error", err?.message || "Unknown server error", "critical", {
+        cause: err
+      });
+
       res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: err?.message || "Unknown error" }));
+      res.end(JSON.stringify({ error: "Internal server error" }));
     }
   });
 
@@ -33,4 +44,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`GI Engine server running on port ${PORT}`);
 });
-
