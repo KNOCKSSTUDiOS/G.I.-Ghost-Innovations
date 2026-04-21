@@ -1,16 +1,16 @@
-export function unique(list = []) {
-  return Array.from(new Set(list));
+export function unique(arr = []) {
+  return Array.from(new Set(arr));
 }
 
-export function chunk(list = [], size = 1) {
-  if (!Array.isArray(list) || size < 1) return [];
-  const result = [];
-  for (let i = 0; i < list.length; i += size) {
-    result.push(list.slice(i, i + size));
+export function chunk(arr = [], size = 2) {
+  if (size <= 0) return [];
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) {
+    out.push(arr.slice(i, i + size));
   }
-  return result;
+  return out;
 }
 
-export function flatten(list = []) {
-  return list.reduce((acc, val) => acc.concat(val), []);
+export function flatten(arr = []) {
+  return arr.reduce((acc, val) => acc.concat(val), []);
 }
