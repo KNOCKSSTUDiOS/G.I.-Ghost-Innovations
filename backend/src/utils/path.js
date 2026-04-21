@@ -1,13 +1,14 @@
 import path from "path";
-import { fileURLToPath } from "url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-export function resolveRoot(...segments) {
-  return path.resolve(__dirname, "..", "..", ...segments);
+export function join(...parts) {
+  return path.join(...parts);
 }
 
-export function joinSafe(...segments) {
-  return path.join(...segments).replace(/\\/g, "/");
+export function normalize(p = "") {
+  return path.normalize(p);
+}
+
+export function ensureTrailingSlash(p = "") {
+  if (!p.endsWith("/")) return p + "/";
+  return p;
 }
