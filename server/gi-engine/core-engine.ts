@@ -12,6 +12,7 @@ import { createGIStorageEngine } from "./storage-engine";
 import { createGILoggerEngine, GI_ConsoleSink } from "./logger-engine";
 import { createGIConfigEngine } from "./config-engine";
 import { createGIUserEngine } from "./user-engine";
+import { createGIPermissionsEngine } from "./permissions-engine";
 
 export interface GICoreEngine {
   auth: ReturnType<typeof createGIAuthEngine>;
@@ -28,6 +29,7 @@ export interface GICoreEngine {
   logger: ReturnType<typeof createGILoggerEngine>;
   config: ReturnType<typeof createGIConfigEngine>;
   user: ReturnType<typeof createGIUserEngine>;
+  permissions: ReturnType<typeof createGIPermissionsEngine>;
 }
 
 export function createGICoreEngine(): GICoreEngine {
@@ -57,7 +59,8 @@ export function createGICoreEngine(): GICoreEngine {
     storage: createGIStorageEngine(),
     logger,
     config,
-    user: createGIUserEngine()
+    user: createGIUserEngine(),
+    permissions: createGIPermissionsEngine()
   };
 
   engine.tasks.start();
