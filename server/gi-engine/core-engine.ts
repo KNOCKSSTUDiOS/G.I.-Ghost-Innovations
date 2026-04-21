@@ -14,6 +14,7 @@ import { createGIConfigEngine } from "./config-engine";
 import { createGIUserEngine } from "./user-engine";
 import { createGIPermissionsEngine } from "./permissions-engine";
 import { createGIRolesEngine } from "./roles-engine";
+import { createGIAccessEngine } from "./access-engine";
 
 export interface GICoreEngine {
   auth: ReturnType<typeof createGIAuthEngine>;
@@ -32,6 +33,7 @@ export interface GICoreEngine {
   user: ReturnType<typeof createGIUserEngine>;
   permissions: ReturnType<typeof createGIPermissionsEngine>;
   roles: ReturnType<typeof createGIRolesEngine>;
+  access: ReturnType<typeof createGIAccessEngine>;
 }
 
 export function createGICoreEngine(): GICoreEngine {
@@ -63,7 +65,8 @@ export function createGICoreEngine(): GICoreEngine {
     config,
     user: createGIUserEngine(),
     permissions: createGIPermissionsEngine(),
-    roles: createGIRolesEngine()
+    roles: createGIRolesEngine(),
+    access: createGIAccessEngine()
   };
 
   engine.tasks.start();
