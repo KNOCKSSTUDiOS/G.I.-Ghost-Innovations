@@ -1,5 +1,13 @@
-export function generateId(prefix = "id") {
-  const rand = Math.random().toString(36).substring(2, 10);
-  const time = Date.now().toString(36);
-  return `${prefix}_${time}_${rand}`;
+import crypto from "crypto";
+
+export function uid(length = 32) {
+  return crypto.randomBytes(length).toString("hex").slice(0, length);
+}
+
+export function shortId(length = 8) {
+  return crypto.randomBytes(length).toString("hex").slice(0, length);
+}
+
+export function timestampId() {
+  return `${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
 }
