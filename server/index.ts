@@ -1,12 +1,19 @@
 import http from "http";
 import { bootstrapGI } from "./bootstrap/gi-bootstrap";
 import { createGIRouter } from "./router/gi-router";
-import { registerGISystemRoutes } from "./router/gi-system-routes";
-import { registerGIAdminRoutes } from "./router/gi-admin-routes";
+
 import { registerGIUserAuthRoutes } from "./router/gi-user-auth-routes";
+import { registerGIAdminRoutes } from "./router/gi-admin-routes";
+import { registerGISystemRoutes } from "./router/gi-system-routes";
+import { registerGIPermissionsRoutes } from "./router/gi-permissions-routes";
 
 const engine = bootstrapGI();
 const router = createGIRouter();
+
+// --------------------------------------
+// REGISTER PERMISSIONS ROUTES
+// --------------------------------------
+registerGIPermissionsRoutes(router);
 
 // --------------------------------------
 // REGISTER USER AUTH ROUTES
@@ -34,7 +41,7 @@ router.register("GET", "/health", async (req, res, engine) => {
 router.register("GET", "/", async (req, res, engine) => {
   res.writeHead(200, { "Content-Type": "text/plain" });
   res.end(
-    "GI Engine Server Running with Router + System Routes + Admin Routes + User Auth Routes"
+    "GI Engine Server Running with Router + System Routes + Admin Routes + User Auth Routes + Permissions Routes"
   );
 });
 
