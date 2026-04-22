@@ -24,4 +24,3 @@ export class MiddlewareStack {
     await dispatch(0);
   }
 }
-
