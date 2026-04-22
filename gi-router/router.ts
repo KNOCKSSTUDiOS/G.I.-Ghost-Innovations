@@ -1,21 +1,18 @@
 import { IncomingMessage, ServerResponse } from "http";
 
-type Handler = (req: IncomingMessage, res: ServerResponse) => Promise<void>;
+type Handler = (
+  req: IncomingMessage,
+  res: ServerResponse
+) => Promise<void> | void;
 
-interface RouteEntry {
+interface Route {
   method: string;
   path: string;
   handler: Handler;
 }
 
 export class Router {
-  private routes: RouteEntry[];
-  private core: any;
-
-  constructor(core: any) {
-    this.routes = [];
-    this.core = core;
-  }
+  private routes: Route[] = [];
 
   register(method: string, path: string, handler: Handler) {
     this.routes.push({ method, path, handler });
@@ -25,18 +22,16 @@ export class Router {
     const method = req.method || "";
     const url = req.url || "";
 
-    for (const route of this.routes) {
-      if (route.method === method && route.path === url) {
-        await route.handler(req, res);
-        return;
-      }
+    const route = this.routes.find(
+      r => r.method === method && r.path === url
+    );
+
+    if (!route) {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "not_found" }));
+      return;
     }
 
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "not_found" }));
+    await route.handler(req, res);
   }
-}
-
-export function createRouter(core: any) {
-  return new Router(core);
 }
